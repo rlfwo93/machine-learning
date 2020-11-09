@@ -1,0 +1,228 @@
+import tensorflow as tf
+from tensorflow import keras
+
+tf.keras.backend.clear_session()  # For memory
+
+import matplotlib.pyplot as plt
+import numpy as np
+import streamlit as st
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
+mnist = tf.keras.datasets.mnist
+
+# GPU check
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+    st.write("#### ", len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Memory growth must be set before GPUs have been initialized
+    st.write(e)
+
+
+st.title('CNN(합성곱 신경망)')
+st.header('Dataset: mnist')
+#spending a few lines to describe our dataset
+st.subheader("mnist란?")
+st.markdown("1. mnist\n"
+            "   - MNIST 데이터란 필기 숫자의 분류를 위한 학습 데이터 집합\n"
+            "   - 사이즈는 28x28의 크기를 가진다. 이미지의 값은 0 또는 1이다 (흑,백)\n"
+            "   - 0 부터 9 까지의 숫자를 28x28 픽셀 크기의 이미지로 구성\n"
+            "   - 1개의 레코드(1개의행 row)는 785개의 숫자로 구성")
+## Error/message text
+st.text("""Dataset of 60,000 28x28 gray training images, 
+        labeled over 0 to 9, 
+        and 10,000 test images.""")
+
+#I'm dividing my data into training and test set
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train = x_train.reshape(60000,28,28,1)
+x_test = x_test.reshape(10000,28,28,1)
+x_train = x_train/255.0
+x_test = x_test/255.0
+
+
+y_test1 = tf.keras.utils.to_categorical(y_test,10)
+y_train1 = tf.keras.utils.to_categorical(y_train,10)
+
+if st.checkbox('Show images sizes'):
+    st.write(f'##### X Train Shape: {x_train.shape}') 
+    st.write(f'##### X Test Shape: {x_test.shape}')
+    st.write(f'##### Y Train Shape: {y_train.shape}')
+    st.write(f'##### Y Test Shape: {y_test.shape}')
+
+
+
+# display one random image from our training set:
+class_names = ["0","1","2","3","4","5","6","7","8","9"]
+st.subheader('Inspecting dataset')
+if st.checkbox('Show random image from the train set'):
+    num = np.random.randint(0, x_train.shape[0])
+    image = x_train[num]
+    st.image(image, caption=class_names[y_train[num]], width=96) #, use_column_width=False)
+
+if st.checkbox('Show 10 different image from the train set'):
+    num_10 = np.unique(y_train, return_index=True)[1]
+#     st.write(num_10)
+    images = x_train[num_10]
+    for i in range(len(images)):
+        # define subplot
+        plt.subplot(2,5,1 + i) #, sharey=False)
+        # plot raw pixel data
+        plt.imshow(images[i])
+        plt.title(class_names[i])
+        plt.xticks([])
+        plt.yticks([])
+    plt.suptitle("10 different numbers", fontsize=18)
+    st.pyplot()
+
+# Sidebar setting
+# Set some elements which will be useful during training.
+st.sidebar.subheader('하이퍼 파라미터를 선택하세요.')
+batch_size = st.sidebar.selectbox('batch_size를 선택하세요.', [32, 64, 128, 256])
+epochs=st.sidebar.selectbox('epochs횟수를 선택하세요.', [5, 10, 20, 50])
+loss_function = st.sidebar.selectbox('Loss function', ['mean_squared_error', 'mean_absolute_error', 'categorical_crossentropy'])
+optimizer = st.sidebar.selectbox('Optimizer', ['SGD', 'RMSprop', 'Adam'])
+
+# Build CNN
+st.subheader('Cnn모델 만들기')
+st.subheader('Cnn층')
+st.text("Please clear cache to train new model")
+model=tf.keras.Sequential()
+
+
+if st.checkbox('첫번 째 Conv2D층의 요소들을 선택해주세요.'):
+    filter1 =st.selectbox("첫번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64], key = "<uniquevalueofsomesort>")
+    act_fn = st.selectbox("첫번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'], key = "<uniquevalueofsomesort>")
+    padding1=st.selectbox("첫번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'], key = "<uniquevalueofsomesort>")
+    model.add(tf.keras.layers.Conv2D(input_shape=(28,28,1),kernel_size=(3,3),strides=(1,1),filters= filter1,padding=padding1,activation=act_fn))
+
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2),strides=(1,1)))
+
+if st.checkbox('두번 째 Conv2D층의 요소들을 선택해주세요.'):
+    filter2 =st.selectbox("두번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64])
+    act_fn2 = st.selectbox("두번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'])
+    padding2=st.selectbox("두번 째첫번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'])
+    model.add(tf.keras.layers.Conv2D(kernel_size=(3,3),filters=filter2,strides=(1,1),padding = padding2,activation= act_fn2))
+
+model.add(tf.keras.layers.MaxPool2D(pool_size=(2,2),strides=(1,1)))
+# act1 = st.selectbox('Activation function for first CONV2D layer: ', ['relu', 'tanh'])
+
+if st.checkbox('Cnn층 dropout 레이어를 추가 하시겠습니까?'):
+    drop1=st.selectbox('dropout 비율을 선택해주세요.', [0.1, 0.25, 0.5])
+    model.add(tf.keras.layers.Dropout(drop1)) 
+    
+model.add(tf.keras.layers.Flatten())
+
+
+# FCN - Dense layers
+st.subheader('FCN층')
+if st.checkbox('첫번째 Dense layers층에 적용할 활성화함수와, 노드의 갯수를 선택하세요.'):
+    FNN_node = st.selectbox("노드의 갯수 :"  , [64,128,256,512],key = "<uniquevalueofsomesort>")
+    act_d = st.selectbox( "활성화 함수 목록 :", ['relu',  'softmax', 'sigmoid'])
+    model.add(tf.keras.layers.Dense(FNN_node,activation=act_d))    
+
+if st.checkbox('FCN층  dropout 레이어를 추가 하시겠습니까?'):
+    drop2=st.selectbox('dropout 비율을 선택해주세요.', [0.1, 0.25, 0.5], key = "<uniquevalueofsomesort>")
+    model.add(tf.keras.layers.Dropout(drop2)) 
+
+if st.checkbox('두번째 Dense layer에 적용할 활성화함수를 선택하세요.'):
+    FNN_node2 = st.selectbox("노드의 갯수 :"  , [64,128,256,512])
+    act_d2 = st.selectbox( "활성화 함수 목록: ",['relu',  'softmax', 'sigmoid'], key = "<uniquevalueofsomesort>")
+    model.add(tf.keras.layers.Dense(FNN_node2,activation=act_d2))
+# output layer - 'softmax'
+model.add(tf.keras.layers.Dense(10,activation='softmax'))
+
+model.compile(loss=loss_function, optimizer=optimizer, metrics=['accuracy'])
+# model.compile(loss='categorical_crossentropy',              optimizer=tf.keras.optimizers.Adam(lr=0.001,decay=1e-6), 
+#               metrics=['accuracy'])
+
+@st.cache(suppress_st_warning=True)
+def fit_model():
+    history =model.fit(x_train,y_train1,
+         batch_size=batch_size,
+         shuffle=True,
+         epochs=epochs)
+        #  validation_data=(np.resize(x_test[0:1000], (1000,28,28,1))/255.0,tf.keras.utils.to_categorical(y_test[0:1000])))
+#     return history
+
+    # Plot training & validation accuracy values
+    acc_list = [100 * i for i in history.history['accuracy']]
+    vacc_list = [100 * i for i in history.history['val_accuracy']]
+    plt.plot(range(1,epochs+1),acc_list)  #history.history['accuracy'])
+    plt.plot(range(1,epochs+1),vacc_list)  #history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy (%)')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    st.pyplot()
+
+    predictions=model.predict(x_test) #x_test/ 255.0) 
+    scores = model.evaluate(x_test,y_test1)
+       
+    tf.keras.backend.clear_session()  # For memory
+    
+    return predictions, scores
+
+# st.write(f'loss: {round(scores[0],2)}')   
+# st.write(f'accuracy: {round(100*scores[1],2)}%')
+    
+if st.checkbox('모델 학습'):
+    predictions, scores = fit_model()
+    
+    st.sidebar.markdown('**Current model**')
+    st.sidebar.markdown(f'loss: {round(scores[0],2)}')   
+    st.sidebar.markdown(f'accuracy: {round(100*scores[1],2)}%')
+    print("scores[1]",scores[1])
+##########################################
+# Visualizing results
+##########################################
+st.subheader('Visualizing results: mnist')
+    
+def plot_pred(i,predictions_array,true_label,img):
+    predictions_array,true_label,img=predictions_array[i],true_label[i:i+1],img[i]
+    plt.grid(False)
+    plt.title(class_names[true_label[0]])
+    plt.xticks([])
+    plt.yticks([])
+    
+    plt.imshow(img)
+    
+    predicted_label=np.argmax(predictions_array)
+    if predicted_label==true_label:   # np.argmax(true_label)
+        st.success("Test image-%d: Classified correctly"%i)
+    else:
+        st.error("Test image-%d: Wrong classification"%i)
+    
+def plot_bar(i,predictions_array,true_label):
+    predictions_array, true_label = predictions_array[i], true_label[i]
+    plt.grid(False)
+    plt.yticks([])
+    plt.xticks(np.arange(10),class_names,rotation=40)
+    
+    thisplot=plt.bar(range(10),predictions_array, color='grey')
+    plt.ylim([0,1])
+    predicted_label=np.argmax(predictions_array)
+    
+    if predicted_label==true_label: #np.argmax(true_label):
+        color='green'
+    else:
+        color='red'
+    
+    thisplot[predicted_label].set_color(color)
+    
+# Show random prediction results
+if st.checkbox('Show random prediction results'):
+    num2 = np.random.randint(0, len(y_test[:1000]))
+    plt.figure(figsize=(9,5))
+    plt.subplot(1,2,1)
+    plot_pred(num2, predictions, y_test, x_test)
+    plt.subplot(1,2,2)
+    plot_bar(num2, predictions,  y_test)
+    plt.title("Green: True, Red: False")
+    st.pyplot()
+
+
