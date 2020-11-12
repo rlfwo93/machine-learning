@@ -8,8 +8,6 @@ import numpy as np
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-mnist = tf.keras.datasets.mnist
-
 # GPU check
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -25,28 +23,29 @@ if gpus:
 
 st.title('CNN(합성곱 신경망)')
 st.header('Dataset: mnist')
-#spending a few lines to describe our dataset
+
+# mnist 간단 설명
 st.subheader("mnist란?")
 st.markdown("1. mnist\n"
             "   - MNIST 데이터란 필기 숫자의 분류를 위한 학습 데이터 집합\n"
             "   - 사이즈는 28x28의 크기를 가진다. 이미지의 값은 0 또는 1이다 (흑,백)\n"
             "   - 0 부터 9 까지의 숫자를 28x28 픽셀 크기의 이미지로 구성\n"
             "   - 1개의 레코드(1개의행 row)는 785개의 숫자로 구성")
-## Error/message text
-st.text("""Dataset of 60,000 28x28 gray training images, 
-        labeled over 0 to 9, 
-        and 10,000 test images.""")
 
-#I'm dividing my data into training and test set
+# 데이터 정규화 
+mnist = tf.keras.datasets.mnist
+
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train = x_train.reshape(60000,28,28,1)
 x_test = x_test.reshape(10000,28,28,1)
 x_train = x_train/255.0
 x_test = x_test/255.0
 
-
+# 레이블 값 원-핫 인코딩.
 y_test1 = tf.keras.utils.to_categorical(y_test,10)
 y_train1 = tf.keras.utils.to_categorical(y_train,10)
+
+# mnist 이미지의 shape를 보여줌
 
 if st.checkbox('Show images sizes'):
     st.write(f'##### X Train Shape: {x_train.shape}') 
@@ -79,37 +78,60 @@ if st.checkbox('Show 10 different image from the train set'):
     plt.suptitle("10 different numbers", fontsize=18)
     st.pyplot()
 
-# Sidebar setting
-# Set some elements which will be useful during training.
+# 사이드바 셋팅
+# 하이퍼파라미터 설정
 st.sidebar.subheader('하이퍼 파라미터를 선택하세요.')
 batch_size = st.sidebar.selectbox('batch_size를 선택하세요.', [32, 64, 128, 256])
 epochs=st.sidebar.selectbox('epochs횟수를 선택하세요.', [5, 10, 20, 50])
-loss_function = st.sidebar.selectbox('Loss function', ['mean_squared_error', 'mean_absolute_error', 'categorical_crossentropy'])
+loss_function = st.sidebar.selectbox('Loss function', ['mean_squared_error', 'mean_absolute_error', 'categorical_crossentropy',"sparse_categorical_crossentropy"])
 optimizer = st.sidebar.selectbox('Optimizer', ['SGD', 'RMSprop', 'Adam'])
 
-# Build CNN
+# CNN 모델 만들기 
+
 st.subheader('Cnn모델 만들기')
 st.subheader('Cnn층')
 st.text("Please clear cache to train new model")
 model=tf.keras.Sequential()
 
+#첫번 쨰 Conv2D층 
 
 if st.checkbox('첫번 째 Conv2D층의 요소들을 선택해주세요.'):
     filter1 =st.selectbox("첫번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64], key = "<uniquevalueofsomesort>")
     act_fn = st.selectbox("첫번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'], key = "<uniquevalueofsomesort>")
     padding1=st.selectbox("첫번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'], key = "<uniquevalueofsomesort>")
-    model.add(tf.keras.layers.Conv2D(input_shape=(28,28,1),kernel_size=(3,3),strides=(1,1),filters= filter1,padding=padding1,activation=act_fn))
+    kersize1 = st.selectbox("첫번 째 Conv2D층의 kernel_size 를 선택하세요.",[(2,2),(3,3),(4,4)],key = "<uniquevalueofsomesort>")
+    constrdies1 = st.selectbox("첫번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)],key = "<uniquevalueofsomesort>")
+    model.add(tf.keras.layers.Conv2D(input_shape=(28,28,1),kernel_size=kersize1,strides=constrdies1,filters= filter1,padding=padding1,activation=act_fn))
+    
+if st.checkbox('첫번 째 풀링층의 요소들을 선택해주세요.'):
+    fool1 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"], key = "<uniquevalueofsomesort>")
+    foolsize1 = st.selectbox("풀링사이즈를 선택하세요.",[(2,2),(3,3)], key = "<uniquevalueofsomesort>")
+    foolst1 = st.selectbox("풀링 stride를 선택하세요.",[(1,1),(2,2)], key = "<uniquevalueofsomesort>")
+    if fool1 == "MaxPool2D":
+        model.add(tf.keras.layers.MaxPool2D(pool_size=foolsize1,strides=foolst1))
+    elif fool1 == "AvgPool2D":
+        model.add(tf.keras.layers.AvgPool2D(pool_size=foolsize1,strides=foolst1))    
 
-model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2),strides=(1,1)))
+
+#두번 쨰 Conv2D층 
 
 if st.checkbox('두번 째 Conv2D층의 요소들을 선택해주세요.'):
     filter2 =st.selectbox("두번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64])
     act_fn2 = st.selectbox("두번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'])
-    padding2=st.selectbox("두번 째첫번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'])
-    model.add(tf.keras.layers.Conv2D(kernel_size=(3,3),filters=filter2,strides=(1,1),padding = padding2,activation= act_fn2))
+    padding2=st.selectbox("두번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'])
+    kersize2 = st.selectbox("두번 째 Conv2D층의 kernel_size 를 선택하세요.",[(2,2),(3,3),(4,4)])
+    constrdies2 = st.selectbox("두번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)])
+    model.add(tf.keras.layers.Conv2D(kernel_size=kersize2,filters=filter2,strides=constrdies2,padding = padding2,activation= act_fn2))
+    
+if st.checkbox('두번 째 풀링층의 요소들을 선택해주세요.'):
+    fool2 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"])
+    foolsize2 = st.selectbox("풀링사이즈를 선택하세요.",[(2,2),(3,3)])
+    foolst2 = st.selectbox("풀링 stride를 선택하세요.",[(1,1),(2,2)])
+    if fool1 == "MaxPool2D":
+        model.add(tf.keras.layers.MaxPool2D(pool_size=foolsize2,strides=foolst2))
+    elif fool1 == "AvgPool2D":
+        model.add(tf.keras.layers.AvgPool2D(pool_size=foolsize2,strides=foolst2))    
 
-model.add(tf.keras.layers.MaxPool2D(pool_size=(2,2),strides=(1,1)))
-# act1 = st.selectbox('Activation function for first CONV2D layer: ', ['relu', 'tanh'])
 
 if st.checkbox('Cnn층 dropout 레이어를 추가 하시겠습니까?'):
     drop1=st.selectbox('dropout 비율을 선택해주세요.', [0.1, 0.25, 0.5])
@@ -118,7 +140,8 @@ if st.checkbox('Cnn층 dropout 레이어를 추가 하시겠습니까?'):
 model.add(tf.keras.layers.Flatten())
 
 
-# FCN - Dense layers
+# FCN층 만들기 
+
 st.subheader('FCN층')
 if st.checkbox('첫번째 Dense layers층에 적용할 활성화함수와, 노드의 갯수를 선택하세요.'):
     FNN_node = st.selectbox("노드의 갯수 :"  , [64,128,256,512],key = "<uniquevalueofsomesort>")
@@ -133,21 +156,22 @@ if st.checkbox('두번째 Dense layer에 적용할 활성화함수를 선택하�
     FNN_node2 = st.selectbox("노드의 갯수 :"  , [64,128,256,512])
     act_d2 = st.selectbox( "활성화 함수 목록: ",['relu',  'softmax', 'sigmoid'], key = "<uniquevalueofsomesort>")
     model.add(tf.keras.layers.Dense(FNN_node2,activation=act_d2))
-# output layer - 'softmax'
+
+#출력레이어
 model.add(tf.keras.layers.Dense(10,activation='softmax'))
 
+# 모델
 model.compile(loss=loss_function, optimizer=optimizer, metrics=['accuracy'])
-# model.compile(loss='categorical_crossentropy',              optimizer=tf.keras.optimizers.Adam(lr=0.001,decay=1e-6), 
-#               metrics=['accuracy'])
+
 
 @st.cache(suppress_st_warning=True)
 def fit_model():
     history =model.fit(x_train,y_train1,
          batch_size=batch_size,
          shuffle=True,
-         epochs=epochs)
-        #  validation_data=(np.resize(x_test[0:1000], (1000,28,28,1))/255.0,tf.keras.utils.to_categorical(y_test[0:1000])))
-#     return history
+         epochs=epochs,
+         validation_data=(x_test,y_test1))
+    # return history
 
     # Plot training & validation accuracy values
     acc_list = [100 * i for i in history.history['accuracy']]
@@ -161,22 +185,22 @@ def fit_model():
     st.pyplot()
 
     predictions=model.predict(x_test) #x_test/ 255.0) 
-    scores = model.evaluate(x_test,y_test1)
+    val_scores = model.evaluate(x_test,y_test1)
        
     tf.keras.backend.clear_session()  # For memory
     
-    return predictions, scores
+    return predictions, val_scores , history
 
-# st.write(f'loss: {round(scores[0],2)}')   
-# st.write(f'accuracy: {round(100*scores[1],2)}%')
-    
+
 if st.checkbox('모델 학습'):
-    predictions, scores = fit_model()
+    predictions, val_scores, history  = fit_model()
     
     st.sidebar.markdown('**Current model**')
-    st.sidebar.markdown(f'loss: {round(scores[0],2)}')   
-    st.sidebar.markdown(f'accuracy: {round(100*scores[1],2)}%')
-    print("scores[1]",scores[1])
+    st.sidebar.markdown(f'loss : {round(model.history.history["loss"],2)}')
+    st.sidebar.markdown(f'accuracy : {round(model.history.history["accuracy"],2)}%')
+    st.sidebar.markdown(f'val_loss: {round(val_scores[0],2)}')   
+    st.sidebar.markdown(f'val_accuracy: {round(100*val_scores[1],2)}%')
+
 ##########################################
 # Visualizing results
 ##########################################
