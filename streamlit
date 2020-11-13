@@ -87,6 +87,25 @@ epochs=st.sidebar.selectbox('epochs횟수를 선택하세요.', [5, 10, 20, 50])
 loss_function = st.sidebar.selectbox('Loss function을 선택하세요.', ['mean_squared_error', 'mean_absolute_error', 'categorical_crossentropy',"sparse_categorical_crossentropy"])
 optimizer = st.sidebar.selectbox('Optimizer를 선택하세요. ', ['SGD', 'RMSprop', 'Adam'])
 
+# mnist 사이즈 선택하기
+x_trainsize =x_train
+y_trainsize =y_train1 
+x_testsize =x_test
+y_testsize =y_test1
+st.subheader('학습할 mnist 사이즈선택하기')
+if st.checkbox("학습할 mnist 사이즈를 선택하세요."):
+    sizecheck = st.selectbox("사이즈를 선택해주세요.",["1000","60000"])
+    if sizecheck == "1000":
+        x_trainsize = x_train[0:1000]
+        y_trainsize = y_train1[0:1000]  
+        x_testsize = x_test[0:1000]
+        y_testsize = y_test1[0:1000]
+    st.write(f'##### X Train Shape:{x_trainsize.shape}') 
+    st.write(f'##### X Test Shape: {x_trainsize.shape}')
+    st.write(f'##### Y Train Shape:{y_trainsize.shape}')
+    st.write(f'##### Y Test Shape: {y_trainsize.shape}')
+
+
 # CNN 모델 만들기 
 
 st.subheader('Cnn모델 만들기')
@@ -104,7 +123,7 @@ if st.checkbox('첫번 째 Conv2D층의 요소들을 선택해주세요.'):
     constrdies1 = st.selectbox("첫번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)],key = "<uniquevalueofsomesort>")
     model.add(tf.keras.layers.Conv2D(input_shape=(28,28,1),kernel_size=kersize1,strides=constrdies1,filters= filter1,padding=padding1,activation=act_fn))
 
-    st.markdown("#### Conv2D(kernel_size={0},filters={1},strides={2},padding = {3},activation= {4}))".format(kersize1,filter1,constrdies1,padding1,act_fn))
+    st.success("#### Conv2D(kernel_size={0},filters={1},strides={2},padding = {3},activation= {4}))".format(kersize1,filter1,constrdies1,padding1,act_fn))
 
 if st.checkbox('첫번 째 풀링층의 요소들을 선택해주세요.'):
     fool1 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"], key = "<uniquevalueofsomesort>")
@@ -113,12 +132,12 @@ if st.checkbox('첫번 째 풀링층의 요소들을 선택해주세요.'):
     if fool1 == "MaxPool2D":
         model.add(tf.keras.layers.MaxPool2D(pool_size=foolsize1,strides=foolst1))
 
-        st.markdown("#### MaxPool2D(pool_size={0},strides={1})".format(foolsize1,foolst1))
+        st.success("#### MaxPool2D(pool_size={0},strides={1})".format(foolsize1,foolst1))
 
     elif fool1 == "AvgPool2D":
         model.add(tf.keras.layers.AvgPool2D(pool_size=foolsize1,strides=foolst1))
 
-        st.markdown("#### AvgPool2D(pool_size={0},strides={1})".format(foolsize1,foolst1))  
+        st.success("#### AvgPool2D(pool_size={0},strides={1})".format(foolsize1,foolst1))  
 
 
 #두번 쨰 Conv2D층 
@@ -131,7 +150,7 @@ if st.checkbox('두번 째 Conv2D층의 요소들을 선택해주세요.'):
     constrdies2 = st.selectbox("두번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)])
     model.add(tf.keras.layers.Conv2D(kernel_size=kersize2,filters=filter2,strides=constrdies2,padding = padding2,activation= act_fn2))
 
-    st.markdown("#### Conv2D(kernel_size={0},filters={1},strides={2},padding = {3},activation= {4}))".format(kersize2,filter2,constrdies2,padding1,act_fn2))
+    st.success("#### Conv2D(kernel_size={0},filters={1},strides={2},padding = {3},activation= {4}))".format(kersize2,filter2,constrdies2,padding1,act_fn2))
 
 if st.checkbox('두번 째 풀링층의 요소들을 선택해주세요.'):
     fool2 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"])
@@ -141,18 +160,18 @@ if st.checkbox('두번 째 풀링층의 요소들을 선택해주세요.'):
     if fool2 == "MaxPool2D":
         model.add(tf.keras.layers.MaxPool2D(pool_size=foolsize2,strides=foolst2))
 
-        st.markdown("#### MaxPool2D(pool_size={0},strides={1})".format(foolsize2,foolst2))
+        st.success("#### MaxPool2D(pool_size={0},strides={1})".format(foolsize2,foolst2))
 
     elif fool2 == "AvgPool2D":
         model.add(tf.keras.layers.AvgPool2D(pool_size=foolsize2,strides=foolst2))    
 
-        st.markdown("#### AvgPool2D(pool_size={0},strides={1})".format(foolsize2,foolst2)) 
+        st.success("#### AvgPool2D(pool_size={0},strides={1})".format(foolsize2,foolst2)) 
 
 if st.checkbox('Cnn층 dropout 레이어를 추가 하시겠습니까?'):
     drop1=st.selectbox('dropout 비율을 선택해주세요.', [0.1, 0.25, 0.5])
     model.add(tf.keras.layers.Dropout(drop1)) 
 
-    st.markdown("#### tf.keras.layers.Dropout({0})".format(drop1))
+    st.success("#### tf.keras.layers.Dropout({0})".format(drop1))
 model.add(tf.keras.layers.Flatten())
 
 
@@ -164,20 +183,20 @@ if st.checkbox('첫번째 Dense layers층에 적용할 활성화함수와, 노�
     act_d = st.selectbox( "활성화 함수 목록 :", ['relu',  'softmax', 'sigmoid'])
     model.add(tf.keras.layers.Dense(FNN_node,activation=act_d))    
 
-    st.markdown("#### Dense({0},activation={1})".format(FNN_node,act_d))
+    st.success("#### Dense({0},activation={1})".format(FNN_node,act_d))
 
 if st.checkbox('FCN층  dropout 레이어를 추가 하시겠습니까?'):
     drop2=st.selectbox('dropout 비율을 선택해주세요.', [0.1, 0.25, 0.5], key = "<uniquevalueofsomesort>")
     model.add(tf.keras.layers.Dropout(drop2)) 
 
-    st.markdown("#### tf.keras.layers.Dropout({0})".format(drop2))
+    st.success("#### tf.keras.layers.Dropout({0})".format(drop2))
 
 if st.checkbox('두번째 Dense layer에 적용할 활성화함수를 선택하세요.'):
     FNN_node2 = st.selectbox("노드의 갯수 :"  , [64,128,256,512])
     act_d2 = st.selectbox( "활성화 함수 목록: ",['relu',  'softmax', 'sigmoid'], key = "<uniquevalueofsomesort>")
     model.add(tf.keras.layers.Dense(FNN_node2,activation=act_d2))
 
-    st.markdown("#### Dense({0},activation={1})".format(FNN_node2,act_d2))
+    st.success("#### Dense({0},activation={1})".format(FNN_node2,act_d2))
 
 #출력레이어
 model.add(tf.keras.layers.Dense(10,activation='softmax'))
@@ -185,24 +204,35 @@ model.add(tf.keras.layers.Dense(10,activation='softmax'))
 # 모델
 model.compile(loss=loss_function, optimizer=optimizer, metrics=['accuracy'])
 
-# @st.cache(hash_funcs={fit_model : fit_model})
+@st.cache(suppress_st_warning=True)
 def fit_model():
-    hist =model.fit(x_train[0:1000],y_train1[0:1000],
+    hist =model.fit(x_trainsize,y_trainsize,
          batch_size=batch_size,
          shuffle=True,
          epochs=epochs,
-         validation_data=(x_test[0:1000],y_test1[0:1000]))
+         validation_data=(x_testsize,y_testsize))
     
 
     # Plot training & validation accuracy values
     acc_list = [100 * i for i in hist.history['accuracy']]
     vacc_list = [100 * i for i in hist.history['val_accuracy']]
+    loss_list = [10*i for i in hist.history["loss"]]
+    valloss_list = [10*i for i in hist.history["val_loss"]]
+    plt.subplot(211)
     plt.plot(range(1,epochs+1),acc_list)  #history.history['accuracy'])
-    plt.plot(range(1,epochs+1),vacc_list)  #history.history['val_accuracy'])
-    plt.title('Model accuracy')
+    plt.plot(range(1,epochs+1),loss_list)  #history.history['val_accuracy'])
+    plt.title('Train accuracy')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.legend(['accuracy', 'loss'], loc='upper left')
+    plt.subplot(212)
+    plt.plot(range(1,epochs+1),vacc_list)  #history.history['accuracy'])
+    plt.plot(range(1,epochs+1),valloss_list)  #history.history['val_accuracy'])
+    plt.title('Test accuracy')
+    plt.ylabel('Accuracy (%)')
+    plt.xlabel('Epoch')
+    plt.legend(['accuracy', 'loss'], loc='upper left')
+    plt.tight_layout()
     st.pyplot()
 
     predictions=model.predict(x_test) #x_test/ 255.0) 
@@ -210,38 +240,28 @@ def fit_model():
        
     tf.keras.backend.clear_session()  # For memory
     
-    return predictions, val_scores , hist
+    return predictions, val_scores 
 
 st.subheader("모델 구조확인, 학습")
 
 
 
-def model_summary():
-    summary = model.summary()
-    return summary
-
-if st.checkbox("모델 전체구조 확인하기"):
-   summary= model_summary()
-   st.markdown(summary)
-
+# def model_summary():
+    
+# if st.checkbox("모델 전체구조 확인하기"):
+  
 
 if st.checkbox('모델 학습'):
-    predictions, val_scores, hist  = fit_model()
-    HistLoss = list(hist.history["loss"])
-    HistAccuracy = list(hist.history["accuracy"])
-
+    predictions, val_scores  = fit_model()
+   
     st.sidebar.markdown('**Current model**')
-    st.sidebar.markdown(f'first_loss : {round(HistLoss[0],2)}')
-    st.sidebar.markdown(f'first_accuracy : {round(100*HistAccuracy[0],2)}%')
-    st.sidebar.markdown(f'last_loss : {round(HistLoss[-1],2)}')
-    st.sidebar.markdown(f'last_accuracy : {round(100*HistAccuracy[-1],2)}%')
     st.sidebar.markdown(f'val_loss: {round(val_scores[0],2)}')   
     st.sidebar.markdown(f'val_accuracy: {round(100*val_scores[1],2)}%')
 
 ##########################################
-# Visualizing results
+# 결과값 보기 
 ##########################################
-st.subheader('Visualizing results: mnist')
+st.subheader('시각화 결과값 보기 ')
     
 def plot_pred(i,predictions_array,true_label,img):
     predictions_array,true_label,img=predictions_array[i],true_label[i:i+1],img[i]
