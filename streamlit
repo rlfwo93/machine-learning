@@ -34,16 +34,16 @@ st.markdown("1. mnist\n"
             "   - 1개의 레코드(1개의행 row)는 785개의 숫자로 구성")
 
 # 데이터 정규화 
-mnist = tf.keras.datasets.mnist
+mnist = tf.keras.datasets.mnist #MNIST셋을 불러옴 . 
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train = x_train.reshape(60000,28,28,1)
+x_train = x_train.reshape(60000,28,28,1) # MNIST는 흑백이기때문에 1을추가.
 x_test = x_test.reshape(10000,28,28,1)
-x_train = x_train/255.0
+x_train = x_train/255.0 # 0~1 까지 값을 MIN--MAX 정규화를 함 .
 x_test = x_test/255.0
 
 # 레이블 값 원-핫 인코딩.
-y_test1 = tf.keras.utils.to_categorical(y_test,10)
+y_test1 = tf.keras.utils.to_categorical(y_test,10) 
 y_train1 = tf.keras.utils.to_categorical(y_train,10)
 
 # mnist 이미지의 shape를 보여줌
@@ -56,17 +56,17 @@ if st.checkbox('mnist셋 shape보기'):
 
 
 
-# display one random image from our training set:
+# 랜덤으로 트레인셋 보기
+
 class_names = ["0","1","2","3","4","5","6","7","8","9"]
-st.subheader('Inspecting dataset')
-if st.checkbox('Show random image from the train set'):
+st.subheader('데이터셋 보기')
+if st.checkbox('랜덤으로 트레인셋 보기'):
     num = np.random.randint(0, x_train.shape[0])
     image = x_train[num]
-    st.image(image, caption=class_names[y_train[num]], width=96) #, use_column_width=False)
+    st.image(image,caption=class_names[y_train[num]],  width=96) #, use_column_width=False)
 
-if st.checkbox('Show 10 different image from the train set'):
+if st.checkbox('랜덤으로 10개의 다른 트레인셋 보기'):
     num_10 = np.unique(y_train, return_index=True)[1]
-#     st.write(num_10)
     images = x_train[num_10]
     for i in range(len(images)):
         # define subplot
@@ -84,8 +84,8 @@ if st.checkbox('Show 10 different image from the train set'):
 st.sidebar.subheader('하이퍼 파라미터를 선택하세요.')
 batch_size = st.sidebar.selectbox('batch_size를 선택하세요.', [32, 64, 128, 256])
 epochs=st.sidebar.selectbox('epochs횟수를 선택하세요.', [5, 10, 20, 50])
-loss_function = st.sidebar.selectbox('Loss function을 선택하세요.', ['mean_squared_error', 'mean_absolute_error', 'categorical_crossentropy',"sparse_categorical_crossentropy"])
-optimizer = st.sidebar.selectbox('Optimizer를 선택하세요. ', ['SGD', 'RMSprop', 'Adam'])
+loss_function = st.sidebar.selectbox('Loss function을 선택하세요.', ['mean_squared_error', 'binary_crossentropy', 'categorical_crossentropy',"sparse_categorical_crossentropy"])
+optimizer = st.sidebar.selectbox('Optimizer를 선택하세요. ', ['SGD', 'RMSprop','AdaGrad', 'Momentum','Adam'])
 
 # mnist 사이즈 선택하기
 x_trainsize =x_train
@@ -110,14 +110,14 @@ if st.checkbox("학습할 mnist 사이즈를 선택하세요."):
 
 st.subheader('Cnn모델 만들기')
 st.subheader('Cnn층')
-st.text("Please clear cache to train new model")
+st.text("새로운 모델을 만들때 clear cache을 꼭 해주세요 !.")
 model=tf.keras.Sequential()
 
 #첫번 쨰 Conv2D층 
 
 if st.checkbox('첫번 째 Conv2D층의 요소들을 선택해주세요.'):
     filter1 =st.selectbox("첫번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64], key = "<uniquevalueofsomesort>")
-    act_fn = st.selectbox("첫번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'], key = "<uniquevalueofsomesort>")
+    act_fn = st.selectbox("첫번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax','tanh'], key = "<uniquevalueofsomesort>")
     padding1=st.selectbox("첫번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'], key = "<uniquevalueofsomesort>")
     kersize1 = st.selectbox("첫번 째 Conv2D층의 kernel_size 를 선택하세요.",[(2,2),(3,3),(4,4)],key = "<uniquevalueofsomesort>")
     constrdies1 = st.selectbox("첫번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)],key = "<uniquevalueofsomesort>")
@@ -127,7 +127,7 @@ if st.checkbox('첫번 째 Conv2D층의 요소들을 선택해주세요.'):
 
 if st.checkbox('첫번 째 풀링층의 요소들을 선택해주세요.'):
     fool1 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"], key = "<uniquevalueofsomesort>")
-    foolsize1 = st.selectbox("풀링사이즈를 선택하세요.",[(2,2),(3,3)], key = "<uniquevalueofsomesort>")
+    foolsize1 = st.selectbox("풀링사이즈를 선택하세요.",[(3,3),(4,4),(5,5)], key = "<uniquevalueofsomesort>")
     foolst1 = st.selectbox("풀링 stride를 선택하세요.",[(1,1),(2,2)], key = "<uniquevalueofsomesort>")
     if fool1 == "MaxPool2D":
         model.add(tf.keras.layers.MaxPool2D(pool_size=foolsize1,strides=foolst1))
@@ -144,7 +144,7 @@ if st.checkbox('첫번 째 풀링층의 요소들을 선택해주세요.'):
 
 if st.checkbox('두번 째 Conv2D층의 요소들을 선택해주세요.'):
     filter2 =st.selectbox("두번 째 Conv2D층의 필터의 갯수를 선택해주세요.", [8, 16, 32,64])
-    act_fn2 = st.selectbox("두번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax'])
+    act_fn2 = st.selectbox("두번 째 Conv2D층의 활성화함수를 선택하세요.", ['relu', 'sigmoid', 'softmax','tanh'])
     padding2=st.selectbox("두번 째 Conv2D층의 패딩여부를  선택하세요.", ['same', 'valid'])
     kersize2 = st.selectbox("두번 째 Conv2D층의 kernel_size 를 선택하세요.",[(2,2),(3,3),(4,4)])
     constrdies2 = st.selectbox("두번 째 Conv2D층의 strides 를 선택하세요.",[(1,1),(2,2),(3,3)])
@@ -154,7 +154,7 @@ if st.checkbox('두번 째 Conv2D층의 요소들을 선택해주세요.'):
 
 if st.checkbox('두번 째 풀링층의 요소들을 선택해주세요.'):
     fool2 = st.selectbox("풀링을 선택하세요.",["MaxPool2D","AvgPool2D"])
-    foolsize2 = st.selectbox("풀링사이즈를 선택하세요.",[(2,2),(3,3)])
+    foolsize2 = st.selectbox("풀링사이즈를 선택하세요.",[(3,3),(4,4),(5,5)])
     foolst2 = st.selectbox("풀링 stride를 선택하세요.",[(1,1),(2,2)])
 
     if fool2 == "MaxPool2D":
@@ -172,6 +172,7 @@ if st.checkbox('Cnn층 dropout 레이어를 추가 하시겠습니까?'):
     model.add(tf.keras.layers.Dropout(drop1)) 
 
     st.success("#### tf.keras.layers.Dropout({0})".format(drop1))
+
 model.add(tf.keras.layers.Flatten())
 
 
@@ -180,7 +181,7 @@ model.add(tf.keras.layers.Flatten())
 st.subheader('FCN층')
 if st.checkbox('첫번째 Dense layers층에 적용할 활성화함수와, 노드의 갯수를 선택하세요.'):
     FNN_node = st.selectbox("노드의 갯수 :"  , [64,128,256,512],key = "<uniquevalueofsomesort>")
-    act_d = st.selectbox( "활성화 함수 목록 :", ['relu',  'softmax', 'sigmoid'])
+    act_d = st.selectbox( "활성화 함수 목록 :", ['relu',  'softmax', 'sigmoid','tanh'])
     model.add(tf.keras.layers.Dense(FNN_node,activation=act_d))    
 
     st.success("#### Dense({0},activation={1})".format(FNN_node,act_d))
@@ -193,13 +194,15 @@ if st.checkbox('FCN층  dropout 레이어를 추가 하시겠습니까?'):
 
 if st.checkbox('두번째 Dense layer에 적용할 활성화함수를 선택하세요.'):
     FNN_node2 = st.selectbox("노드의 갯수 :"  , [64,128,256,512])
-    act_d2 = st.selectbox( "활성화 함수 목록: ",['relu',  'softmax', 'sigmoid'], key = "<uniquevalueofsomesort>")
+    act_d2 = st.selectbox( "활성화 함수 목록: ",['relu',  'softmax', 'sigmoid','tanh'], key = "<uniquevalueofsomesort>")
     model.add(tf.keras.layers.Dense(FNN_node2,activation=act_d2))
 
     st.success("#### Dense({0},activation={1})".format(FNN_node2,act_d2))
 
 #출력레이어
-model.add(tf.keras.layers.Dense(10,activation='softmax'))
+if st.checkbox("출력레이어를 생성하기."):
+    model.add(tf.keras.layers.Dense(10,activation='softmax'))
+    st.success("#### model.add(tf.keras.layers.Dense(10,activation='softmax'))")
 
 # 모델
 model.compile(loss=loss_function, optimizer=optimizer, metrics=['accuracy'])
@@ -213,21 +216,22 @@ def fit_model():
          validation_data=(x_testsize,y_testsize))
     
 
-    # Plot training & validation accuracy values
+    # 플로트그리기, 시각화
+
     acc_list = [100 * i for i in hist.history['accuracy']]
     vacc_list = [100 * i for i in hist.history['val_accuracy']]
     loss_list = [10*i for i in hist.history["loss"]]
     valloss_list = [10*i for i in hist.history["val_loss"]]
     plt.subplot(211)
-    plt.plot(range(1,epochs+1),acc_list)  #history.history['accuracy'])
-    plt.plot(range(1,epochs+1),loss_list)  #history.history['val_accuracy'])
+    plt.plot(range(1,epochs+1),acc_list)  
+    plt.plot(range(1,epochs+1),loss_list)  
     plt.title('Train accuracy')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend(['accuracy', 'loss'], loc='upper left')
     plt.subplot(212)
-    plt.plot(range(1,epochs+1),vacc_list)  #history.history['accuracy'])
-    plt.plot(range(1,epochs+1),valloss_list)  #history.history['val_accuracy'])
+    plt.plot(range(1,epochs+1),vacc_list)  
+    plt.plot(range(1,epochs+1),valloss_list)  
     plt.title('Test accuracy')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
@@ -235,21 +239,14 @@ def fit_model():
     plt.tight_layout()
     st.pyplot()
 
-    predictions=model.predict(x_test) #x_test/ 255.0) 
-    val_scores = model.evaluate(x_test,y_test1)
+    predictions=model.predict(x_testsize) 
+    val_scores = model.evaluate(x_testsize,y_testsize)
        
-    tf.keras.backend.clear_session()  # For memory
+    tf.keras.backend.clear_session()  #메모리 초기화
     
     return predictions, val_scores 
 
 st.subheader("모델 구조확인, 학습")
-
-
-
-# def model_summary():
-    
-# if st.checkbox("모델 전체구조 확인하기"):
-  
 
 if st.checkbox('모델 학습'):
     predictions, val_scores  = fit_model()
@@ -273,10 +270,10 @@ def plot_pred(i,predictions_array,true_label,img):
     plt.imshow(img)
     
     predicted_label=np.argmax(predictions_array)
-    if predicted_label==true_label:   # np.argmax(true_label)
-        st.success("Test image-%d: Classified correctly"%i)
+    if predicted_label==true_label:   
+        st.success("Test image-%d: 정답 "%i)
     else:
-        st.error("Test image-%d: Wrong classification"%i)
+        st.error("Test image-%d: 오답 "%i)
     
 def plot_bar(i,predictions_array,true_label):
     predictions_array, true_label = predictions_array[i], true_label[i]
@@ -288,20 +285,21 @@ def plot_bar(i,predictions_array,true_label):
     plt.ylim([0,1])
     predicted_label=np.argmax(predictions_array)
     
-    if predicted_label==true_label: #np.argmax(true_label):
-        color='green'
+    if predicted_label==true_label: 
+        color='blue'
     else:
         color='red'
     
     thisplot[predicted_label].set_color(color)
     
-# Show random prediction results
-if st.checkbox('Show random prediction results'):
+# 랜덤으로 결과값 보기 
+
+if st.checkbox('랜덤으로 결과값 보기'):
     num2 = np.random.randint(0, len(y_test[:1000]))
     plt.figure(figsize=(9,5))
     plt.subplot(1,2,1)
     plot_pred(num2, predictions, y_test, x_test)
     plt.subplot(1,2,2)
     plot_bar(num2, predictions,  y_test)
-    plt.title("Green: True, Red: False")
+    plt.title("blue :right answer , Red: wrong answer")
     st.pyplot()
