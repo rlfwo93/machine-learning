@@ -1,12 +1,13 @@
 import tensorflow as tf
 from tensorflow import keras
-
+import glob
+import cv2 as cv
+import PIL.Image as pil
 tf.keras.backend.clear_session()  # For memory
 
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
-import pandas as pd
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
 # GPU check
@@ -33,7 +34,28 @@ st.markdown("1. mnist\n"
             "   - 0 부터 9 까지의 숫자를 28x28 픽셀 크기의 이미지로 구성\n"
             "   - 1개의 레코드(1개의행 row)는 785개의 숫자로 구성")
 
+#그림판 이미지 
+
+cv_img = []
+imgnp = np.array([])
+path = glob.glob("number/*.png")
+for img in path:
+    n = cv.imread(img,cv.IMREAD_COLOR)
+    # # ngray = cv.cvtColor(n, cv.COLOR_BGR2GRAY)
+    # cv_img.append(ngray)
+    gray = lambda n : np.dot(n[... , :3] , [0.299 , 0.587, 0.114])
+    n_gray = gray(n)
+    # n_gray = cv.resize(n_gray, (28,28), interpolation=cv.INTER_LINEAR)/255.0
+    # n_gray = n_gray.reshape(28,28,1)
+    imgnp = np.append(imgnp,n_gray)
+lenimg = len(imgnp)//784
+imgnp = imgnp.reshape(lenimg,28,28,1)
+imgnp = imgnp/255.0
+impnplabel = np.array([0,1,2,3,4,5,6,7,8,9,5,2,2,3,4,5,6])
+impnplabel_one = tf.keras.utils.to_categorical(impnplabel,10)
+
 # 데이터 정규화 
+
 mnist = tf.keras.datasets.mnist #MNIST셋을 불러옴 . 
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -63,7 +85,7 @@ st.subheader('데이터셋 보기')
 if st.checkbox('랜덤으로 트레인셋 보기'):
     num = np.random.randint(0, x_train.shape[0])
     image = x_train[num]
-    st.image(image,caption=class_names[y_train[num]],  width=96) #, use_column_width=False)
+    st.image(np.squeeze(image,2),caption=class_names[y_train[num]],  width=96) #, use_column_width=False)
 
 if st.checkbox('랜덤으로 10개의 다른 트레인셋 보기'):
     num_10 = np.unique(y_train, return_index=True)[1]
@@ -71,14 +93,30 @@ if st.checkbox('랜덤으로 10개의 다른 트레인셋 보기'):
     for i in range(len(images)):
         # define subplot
         plt.subplot(2,5,1 + i) #, sharey=False)
-        # plot raw pixel data
-        plt.imshow(images[i])
+        # plot raw pixel data      
+        plt.imshow(np.squeeze(images[i],2))
         plt.title(class_names[i])
         plt.xticks([])
         plt.yticks([])
     plt.suptitle("10 different numbers", fontsize=18)
     st.pyplot()
 
+
+# 그림판 이미지 보기 
+
+if st.checkbox('그림판 이미지 보기 '):
+    images = imgnp
+    for i in range(lenimg):
+        # define subplot
+        plt.subplot(2,5,1 + i) #, sharey=False)
+        # plot raw pixel data      
+        plt.imshow(np.squeeze(images[i],2))
+        plt.title(class_names[i])
+        plt.xticks([])
+        plt.yticks([])
+    plt.suptitle("Paint Images", fontsize=18)
+    st.pyplot()
+    
 # 사이드바 셋팅
 # 하이퍼파라미터 설정
 st.sidebar.subheader('하이퍼 파라미터를 선택하세요.')
@@ -215,9 +253,7 @@ def fit_model():
          epochs=epochs,
          validation_data=(x_testsize,y_testsize))
     
-
     # 플로트그리기, 시각화
-
     acc_list = [100 * i for i in hist.history['accuracy']]
     vacc_list = [100 * i for i in hist.history['val_accuracy']]
     loss_list = [10*i for i in hist.history["loss"]]
@@ -241,15 +277,15 @@ def fit_model():
 
     predictions=model.predict(x_testsize) 
     val_scores = model.evaluate(x_testsize,y_testsize)
-       
+    predictionsimgnp = model.predict(imgnp)
     tf.keras.backend.clear_session()  #메모리 초기화
     
-    return predictions, val_scores 
+    return predictions, val_scores, predictionsimgnp
 
 st.subheader("모델 구조확인, 학습")
 
 if st.checkbox('모델 학습'):
-    predictions, val_scores  = fit_model()
+    predictions, val_scores, predictionsimgnp  = fit_model()
    
     st.sidebar.markdown('**Current model**')
     st.sidebar.markdown(f'val_loss: {round(val_scores[0],2)}')   
@@ -303,3 +339,38 @@ if st.checkbox('랜덤으로 결과값 보기'):
     plot_bar(num2, predictions,  y_test)
     plt.title("blue :right answer , Red: wrong answer")
     st.pyplot()
+
+
+
+
+def plot_pred_im(i,predictions_array,true_label,img):
+    predictions_array,true_label,img=predictions_array[i],true_label[i:i+1],img[i]
+    plt.grid(False)
+    plt.xticks([])
+    plt.yticks([])
+    
+    plt.imshow(np.squeeze(img,2))
+    
+    predicted_label=np.argmax(predictions_array)
+
+def plot_bar_im(i,predictions_array,true_label):
+    predictions_array, true_label = predictions_array[i], true_label[i]
+    plt.grid(False)
+    plt.yticks([])
+    plt.xticks(np.arange(10),class_names,rotation=40)
+    
+    thisplot=plt.bar(range(10),predictions_array, color='skyblue')
+    plt.ylim([0,1])
+    predicted_label=np.argmax(predictions_array)
+    
+
+if st.checkbox('그림판 데이터 보기'):
+    num1 = np.random.randint(0, len(imgnp[:17]))
+    plt.figure(figsize=(9,5))
+    plt.subplot(1,2,1)
+    plot_pred_im(num1, predictionsimgnp, impnplabel, imgnp)
+    plt.subplot(1,2,2)
+    plot_bar_im(num1, predictionsimgnp,  impnplabel)
+    st.pyplot()
+
+
